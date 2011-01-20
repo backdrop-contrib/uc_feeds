@@ -43,7 +43,17 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
 			'callback' => 'uc_feeds_feeds_set_target',
 			'description' => 'Ubercart:'. t('Weight Unit'),
 		);
-		// Attributes
+		// Stock
+		if (module_exists("uc_stock")) {
+			$targets['stock'] = array(
+				'name' => t('UC: Stock Level'),
+				'callback' => 'uc_feeds_feeds_set_target',
+				'description' => 'Ubercart:'. t('Stock'),
+			);
+		}
+		// TODO : Price By Role, others?
+		
+		//Attributes 
 		if (module_exists("uc_attribute")) {
 			$attribs = uc_attribute_load_multiple();
 			foreach ($attribs as $attrib) {
@@ -62,8 +72,6 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
 					);
 				}
 			}
-		}
-	}
 }
 
 /**
@@ -73,9 +81,10 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
  * user has decided to map to and $value contains the value of the feed item
  * element the user has picked as a source.
  */
+
 function uc_feeds_feeds_set_target(&$node, $target, $value) {
 	if (!is_array($value)) {
-		if (substr($target,0,10) != "attribute_") {
+		if (substr($target,0,10) != "attribute_") {   //if it's not an attribute, deal with it here 
 			$node->$target = $value;
 		} else {
 			$ao_arr = explode("_",$target);
@@ -93,11 +102,12 @@ function uc_feeds_feeds_set_target(&$node, $target, $value) {
 }
 
 function uc_feeds_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
-	if (!$node->uc_feeds_flag == "Attributes") return;
 	switch ($op) {
 		case "insert":
-			//dpm($node);
-			if (module_exists("uc_attribute")) {
+			//Stocks
+			uc_stock_adjust($node->model, $node->stock);
+			//Attributes
+			if (($node->uc_feeds_flag == "Attributes") && (module_exists("uc_attribute"))) {
 				foreach ($node->attributes as $aid=>$feedattrib) {
 					// Enable all options for added attributes.
 					$attribute = uc_attribute_load($aid);
@@ -106,7 +116,7 @@ function uc_feeds_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
 							$option->price = $node->attributes[$aid]->options[$option->oid]->price;
 							$option->weight = $node->attributes[$aid]->options[$option->oid]->weight;
 						}
-						db_query("INSERT INTO {uc_product_options} (nid, oid, cost, price, weight, ordering) VALUES %d, %d, %f, %f, %f, %d)", $node->nid, $option->oid, $option->cost, $option->price, $option->weight, $option->ordering);
+						db_query("INSERT INTO {uc_product_options} (nid, oid, cost, price, weight, ordering) VALUES (%d, %d, %f, %f, %f, %d)", $node->nid, $option->oid, $option->cost, $option->price, $option->weight, $option->ordering);
 						//dpm(array("INSERT INTO uc_product_options (nid, oid, cost, price, weight, ordering) VALUES (%d, %d, %f, %f, %f, %d)", $node->nid, $option->oid, $option->cost, $option->price, $option->weight, $option->ordering));
 					}
 					// Make the first option (if any) the default.
