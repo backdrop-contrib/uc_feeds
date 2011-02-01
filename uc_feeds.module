@@ -128,4 +128,4 @@ function uc_feeds_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
 				break;
 			}
 	}
-}}
+}
