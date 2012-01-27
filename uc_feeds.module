@@ -1,74 +1,96 @@
-<?php 
-
+<?php
+/**
+ * @file
+ * Integrates Ubercart properties with Feeds
+ */
 
 /**
  * Implementation of hook_feeds_node_processor_targets_alter().
+ * @param array $targets
+ * @param string $content_type
+ * @return void
  */
 function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
-	// Proceed only if the content_type is a product type.
-	if (in_array($content_type, uc_product_types())) {
-		// Model
-		$targets['model'] = array(
-			'name' => t('UC: Model/SKU'),
-			'callback' => 'uc_feeds_feeds_set_target',
-			'description' => 'Ubercart:'. t('Model/SKU'),
-		);
-		// List price
-		$targets['list_price'] = array(
-			'name' => t('UC: List price'),
-			'callback' => 'uc_feeds_feeds_set_target',
-			'description' => 'Ubercart:'. t('List price'),
-		);
-		// Cost
-		$targets['cost'] = array(
-			'name' => t('UC: Cost'),
-			'callback' => 'uc_feeds_feeds_set_target',
-			'description' => 'Ubercart:'. t('Cost'),
-		);
-		// Sell price
-		$targets['sell_price'] = array(
-			'name' => t('UC: Sell price'),
-			'callback' => 'uc_feeds_feeds_set_target',
-			'description' => 'Ubercart:'. t('Sell price'),
-		);
-		// Weight
-		$targets['weight'] = array(
-			'name' => t('UC: Weight'),
-			'callback' => 'uc_feeds_feeds_set_target',
-			'description' => 'Ubercart:'. t('Weight'),
-		);
-		$targets['weight_units'] = array(
-			'name' => t('UC: Weight Unit'),
-			'callback' => 'uc_feeds_feeds_set_target',
-			'description' => 'Ubercart:'. t('Weight Unit'),
-		);
-		// Attributes
-		if (module_exists("uc_attribute")) {
-			$attribs = uc_attribute_load_multiple();
-			foreach ($attribs as $attrib) {
-				$aid = $attrib->aid;
-				foreach ($attrib->options as $option) {
-					$oid = $option->oid;
-					$targets['attribute_price_' . $aid . "_" . $oid] = array(
-						'name' => t('UCA Price: ' . $attrib->name . ":" . $option->name),
-						'callback' => 'uc_feeds_feeds_set_target',
-						'description' => 'Ubercart:'. t('Attribute Price:' . $attrib->name . ":" . $option->name),
-					);
-				}
-			}
-			foreach ($attribs as $attrib) {
-				$aid = $attrib->aid;
-				foreach ($attrib->options as $option) {
-					$oid = $option->oid;
-					$targets['attribute_weight_' . $aid . "_" . $oid] = array(
-						'name' => t('UCA Weight: ' . $attrib->name . ":" . $option->name),
-						'callback' => 'uc_feeds_feeds_set_target',
-						'description' => 'Ubercart:'. t('Attribute Weight:' . $attrib->name . ":" . $option->name),
-					);
-				}
-			}
-		}
-	}
+  // Proceed only if the content_type is a product type.
+  if (in_array($content_type, uc_product_types())) {
+    // Model
+    $targets['uc_product:model'] = array(
+      'name' => t('UC: Model/SKU'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Model/SKU'))),
+    );
+    // List price
+    $targets['uc_product:list_price'] = array(
+      'name' => t('UC: List price'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('List price'))),
+    );
+    // Cost
+    $targets['uc_product:cost'] = array(
+      'name' => t('UC: Cost'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Cost'))),
+    );
+    // Sell price
+    $targets['uc_product:sell_price'] = array(
+      'name' => t('UC: Sell price'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Sell price'))),
+    );
+    // Weight
+    $targets['uc_product:weight'] = array(
+      'name' => t('UC: Weight'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Weight'))),
+    );
+    $targets['uc_product:weight_units'] = array(
+      'name' => t('UC: Weight Unit'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Weight Unit'))),
+    );
+    // Stock
+    if (module_exists('uc_stock')) {
+      $targets['uc_stock:stock'] = array(
+        'name' => t('UC: Stock Level'),
+        'callback' => 'uc_feeds_feeds_set_target',
+        'description' => t('Ubercart: !mapper', array('!mapper' => t('Stock'))),
+      );
+    }
+    // TODO : Price By Role, others?
+
+    // Attributes
+    if (module_exists('uc_attribute') && function_exists('uc_attribute_load_multiple')) {
+      $attribs = uc_attribute_load_multiple();
+      foreach ($attribs as $attrib) {
+        $aid = $attrib->aid;
+        foreach ($attrib->options as $option) {
+          $oid = $option->oid;
+          $targets['uc_attribute:attribute_price_' . $aid . '_' . $oid] = array(
+            'name' => t('UCA Price: @attribute:@option', array('@attribute' => $attrib->name, '@option' => $option->name)),
+            'callback' => 'uc_feeds_feeds_set_target',
+            'description' => t('Ubercart: !mapper', array(
+                '!mapper' => t('Attribute Price: @attribute:@option', array('@attribute' => $attrib->name, '@option' => $option->name))
+              )
+            ),
+          );
+        }
+      }
+      foreach ($attribs as $attrib) {
+        $aid = $attrib->aid;
+        foreach ($attrib->options as $option) {
+          $oid = $option->oid;
+          $targets['uc_attribute:attribute_weight_' . $aid . '_' . $oid] = array(
+            'name' => t('UCA Weight: @attribute:@option', array('@attribute' => $attrib->name, '@option' => $option->name)),
+            'callback' => 'uc_feeds_feeds_set_target',
+            'description' => t('Ubercart: !mapper', array(
+                '!mapper' => t('Attribute Weight: @attribute:@option', array('@attribute' => $attrib->name, '@option' => $option->name))
+              )
+            ),
+          );
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -77,54 +99,104 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
  * When the callback is invoked, $target contains the name of the field the
  * user has decided to map to and $value contains the value of the feed item
  * element the user has picked as a source.
+ *
+ * @param object $node
+ * @param string $target
+ * @param mixed $value
+ * @return void
  */
 function uc_feeds_feeds_set_target(&$node, $target, $value) {
-	if (!is_array($value)) {
-		if (substr($target,0,10) != "attribute_") {
-			$node->$target = $value;
-		} else {
-			$ao_arr = explode("_",$target);
-			$aid = $ao_arr[2];
-			$oid = $ao_arr[3];
-			// just flag the attributes for now - node API will take care of saving them
-			$node->uc_feeds_flag = "Attributes";
-			if (substr($target,0,15) == "attribute_price") {
-				$node->attributes[$aid]->options[$oid]->price = $value;
-			} elseif (substr($target,0,16) == "attribute_weight") {
-				$node->attributes[$aid]->options[$oid]->weight = $value;
-			}
-		}
-	}
+  if ($value == '') {
+    return;
+  }
+
+  // Examine target: first part is module, second part is target
+  $aTarget = explode(':', $target);
+  $module = $aTarget[0];
+  $target = $aTarget[1];
+
+  switch ($module) {
+    // Ubercart Attributes
+    case 'uc_attribute':
+      if (!is_array($value)) {
+        $ao_arr = explode('_', $target);
+        $aid = $ao_arr[2];
+        $oid = $ao_arr[3];
+        // just flag the attributes for now - node API will take care of saving them
+        $node->uc_feeds_flag = 'Attributes';
+        if (substr($target, 0, 15) == 'attribute_price') {
+          $node->attributes[$aid]->options[$oid]->price = $value;
+        }
+        elseif (substr($target, 0, 16) == 'attribute_weight') {
+          $node->attributes[$aid]->options[$oid]->weight = $value;
+        }
+      }
+      return;
+
+    // Stock
+    case 'uc_stock':
+      if (!is_array($value)) {
+        if (!isset($node->model)) {
+          // Error: model is unknown.
+          drupal_set_message(t("You can not set the stock for a product if the Model/SKU is not known. Ensure that you map the Model/SKU first.", 'warning'));
+          return;
+        }
+        if (uc_stock_is_active($node->model)) {
+          // Update stock levels
+          uc_stock_set($node->model, $value);
+        }
+        else {
+          // Insert new stock level. Not sure how to set the threshold. This would be zero now.
+          $sQuery = "INSERT INTO {uc_product_stock} (sku, nid, active, stock) VALUES ('%s', %d, %d, %d)"; 
+          db_query($sQuery, $node->model, $node->nid, 1, $value);
+        }
+      }
+      return;
+
+    // Product
+    case 'uc_product':
+      if (!is_array($value)) {
+        $node->$target = $value;
+      }
+      return;
+  }
 }
 
-function uc_feeds_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
-	if (!$node->uc_feeds_flag == "Attributes") return;
-	switch ($op) {
-		case "insert":
-			//dpm($node);
-			if (module_exists("uc_attribute")) {
-				foreach ($node->attributes as $aid=>$feedattrib) {
-					// Enable all options for added attributes.
-					$attribute = uc_attribute_load($aid);
-					foreach ($attribute->options as $option) {
-						if ($node->attributes[$aid]->options[$option->oid]) {
-							$option->price = $node->attributes[$aid]->options[$option->oid]->price;
-							$option->weight = $node->attributes[$aid]->options[$option->oid]->weight;
-						}
-						db_query("INSERT INTO {uc_product_options} (nid, oid, cost, price, weight, ordering) VALUES (%d, %d, %f, %f, %f, %d)", $node->nid, $option->oid, $option->cost, $option->price, $option->weight, $option->ordering);
-						//dpm(array("INSERT INTO uc_product_options (nid, oid, cost, price, weight, ordering) VALUES (%d, %d, %f, %f, %f, %d)", $node->nid, $option->oid, $option->cost, $option->price, $option->weight, $option->ordering));
-					}
-					// Make the first option (if any) the default.
-					$option = reset($attribute->options);
-					if ($option) {
-						$oid = $option->oid;
-					} else {
-						$oid = 0;
-					}
-					db_query("INSERT INTO {uc_product_attributes} (nid, aid, label, ordering, default_option, required, display) SELECT %d, aid, label, ordering, %d, required, display FROM {uc_attributes} WHERE aid = %d", $node->nid, $oid, $aid);
-					//dpm(array("INSERT INTO uc_product_attributes (nid, aid, label, ordering, default_option, required, display) SELECT %d, aid, label, ordering, %d, required, display FROM {uc_attributes} WHERE aid = %d", $node->nid, $oid, $aid));
-				}
-				break;
-			}
-	}
+/**
+ * Implementation of hook_nodeapi().
+ * @param object $node
+ * @param string $op
+ * @return void
+ */
+function uc_feeds_nodeapi(&$node, $op) {
+  if (!$node->uc_feeds_flag == 'Attributes') {
+    return;
+  }
+  switch ($op) {
+    case 'insert':
+      if (module_exists('uc_attribute')) {
+        foreach ($node->attributes as $aid => $feedattrib) {
+          // Enable all options for added attributes.
+          $attribute = uc_attribute_load($aid);
+          foreach ($attribute->options as $option) {
+            if ($node->attributes[$aid]->options[$option->oid]) {
+              $option->price = $node->attributes[$aid]->options[$option->oid]->price;
+              $option->weight = $node->attributes[$aid]->options[$option->oid]->weight;
+            }
+            db_query("INSERT INTO {uc_product_options} (nid, oid, cost, price, weight, ordering) VALUES (%d, %d, %f, %f, %f, %d)", $node->nid, $option->oid, $option->cost, $option->price, $option->weight, $option->ordering);
+          }
+          // Make the first option (if any) the default.
+          $option = reset($attribute->options);
+          if ($option) {
+            $oid = $option->oid;
+          }
+          else {
+            $oid = 0;
+          }
+          db_query("INSERT INTO {uc_product_attributes} (nid, aid, label, ordering, default_option, required, display) SELECT %d, aid, label, ordering, %d, required, display FROM {uc_attributes} WHERE aid = %d", $node->nid, $oid, $aid);
+        }
+        break;
+      }
+  }
 }
+
