@@ -195,8 +195,11 @@ function uc_feeds_nodeapi(&$node, $op) {
           }
           db_query("INSERT INTO {uc_product_attributes} (nid, aid, label, ordering, default_option, required, display) SELECT %d, aid, label, ordering, %d, required, display FROM {uc_attributes} WHERE aid = %d", $node->nid, $oid, $aid);
         }
-        break;
       }
+      break;
+    case 'update':
+      uc_stock_adjust($node->model, $node->stock);
+      break;
   }
 }
 
