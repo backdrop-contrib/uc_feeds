@@ -72,18 +72,18 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
     $targets['uc_product:pkg_qty'] = array(
       'name' => t('UC: pkg_qty'),
       'callback' => 'uc_feeds_feeds_set_target',
-      'description' => 'Ubercart:'. t('Package Quantity'),
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Package Quantity'))),
     );
     $targets['uc_product:default_qty'] = array(
       'name' => t('UC: default_qty'),
       'callback' => 'uc_feeds_feeds_set_target',
-      'description' => 'Ubercart:'. t('Default Quantity to add to cart'),
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Default Quantity to add to cart'))),
     );
     // Shippable
     $targets['uc_product:shippable'] = array(
       'name' => t('UC: Shippable'),
       'callback' => 'uc_feeds_feeds_set_target',
-      'description' => 'Ubercart:'. t('Shippable'),
+      'description' => t('Ubercart: !mapper', array('!mapper' => t('Shippable'))),
     );    
     // Stock
     if (module_exists('uc_stock')) {
@@ -143,67 +143,59 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
  * @return void
  */
 function uc_feeds_feeds_set_target(&$node, $target, $value) {
-  if ($value == '') {
+  if (is_array($value) || ($value == '')) {
     return;
   }
 
   // Examine target: first part is module, second part is target
-  $aTarget = explode(':', $target);
-  $module = $aTarget[0];
-  $target = $aTarget[1];
+  list($module, $target) = explode(':', $target);
 
   switch ($module) {
     // Ubercart Attributes
     case 'uc_attribute':
-      if (!is_array($value)) {
-        $ao_arr = explode('_', $target);
-        $aid = $ao_arr[2];
-        $oid = $ao_arr[3];
-        // just flag the attributes for now - node API will take care of saving them
-        $node->uc_feeds_flag = 'Attributes';
-        if (substr($target, 0, 15) == 'attribute_price') {
-          $node->attributes[$aid]->options[$oid]->price = $value;
-        }
-        elseif (substr($target, 0, 16) == 'attribute_weight') {
-          $node->attributes[$aid]->options[$oid]->weight = $value;
-        }
+      $ao_arr = explode('_', $target);
+      $aid = $ao_arr[2];
+      $oid = $ao_arr[3];
+      // just flag the attributes for now - node API will take care of saving them
+      $node->uc_feeds_flag = 'Attributes';
+      if (substr($target, 0, 15) == 'attribute_price') {
+        $node->attributes[$aid]->options[$oid]->price = $value;
+      }
+      elseif (substr($target, 0, 16) == 'attribute_weight') {
+        $node->attributes[$aid]->options[$oid]->weight = $value;
       }
       return;
 
     // Stock
     case 'uc_stock':
-      if (!is_array($value)) {
-        if (!isset($node->model)) {
-          // Error: model is unknown.
-          drupal_set_message(t("You can not set the stock for a product if the Model/SKU is not known. Ensure that you map the Model/SKU first.", 'warning'));
-          return;
-        }
-        if (uc_stock_is_active($node->model)) {
-          // Update stock levels
-          uc_stock_set($node->model, $value);
-        }
-        else {
-          // Insert new stock level. Not sure how to set the threshold. This would be zero now.
-          $sQuery = "INSERT INTO {uc_product_stock} (sku, nid, active, stock) VALUES ('%s', %d, %d, %d)"; 
-          db_query($sQuery, $node->model, $node->nid, 1, $value);
-        }
+      if (!isset($node->model)) {
+        // Error: model is unknown.
+        drupal_set_message(t("You can not set the stock for a product if the Model/SKU is not known. Ensure that you map the Model/SKU first.", 'warning'));
+        return;
+      }
+      if (uc_stock_is_active($node->model)) {
+        // Update stock levels
+        uc_stock_set($node->model, $value);
+      }
+      else {
+        // Insert new stock level. Not sure how to set the threshold. This would be zero now.
+        $sQuery = "INSERT INTO {uc_product_stock} (sku, nid, active, stock) VALUES ('%s', %d, %d, %d)"; 
+        db_query($sQuery, $node->model, $node->nid, 1, $value);
       }
       return;
 
     // Product
     case 'uc_product':
-      if (!is_array($value)) {
-        switch ($target) {
-        case 'length':
-        case 'width':
-        case 'height':
-          $d = "dim_$target";
-          $node->$d = $value;
-          break;
+      switch ($target) {
+      case 'length':
+      case 'width':
+      case 'height':
+        $d = "dim_$target";
+        $node->$d = $value;
+        break;
 
-        default:
-          $node->$target = $value;
-        }
+      default:
+        $node->$target = $value;
       }
       return;
   }
