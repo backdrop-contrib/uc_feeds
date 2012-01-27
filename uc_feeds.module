@@ -69,6 +69,16 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
       'callback' => 'uc_feeds_feeds_set_target',
       'description' => t('Ubercart: !mapper', array('!mapper' => t('Dimension Units'))),
     );
+    $targets['uc_product:pkg_qty'] = array(
+      'name' => t('UC: pkg_qty'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => 'Ubercart:'. t('Package Quantity'),
+    );
+    $targets['uc_product:default_qty'] = array(
+      'name' => t('UC: default_qty'),
+      'callback' => 'uc_feeds_feeds_set_target',
+      'description' => 'Ubercart:'. t('Default Quantity to add to cart'),
+    );
     // Shippable
     $targets['uc_product:shippable'] = array(
       'name' => t('UC: Shippable'),
