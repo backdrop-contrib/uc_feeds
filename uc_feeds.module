@@ -94,6 +94,7 @@ function uc_feeds_feeds_node_processor_targets_alter(&$targets, $content_type) {
       );
     }
     // TODO : Price By Role, others?
+    // Need new patches
 
     // Attributes
     if (module_exists('uc_attribute') && function_exists('uc_attribute_load_multiple')) {
