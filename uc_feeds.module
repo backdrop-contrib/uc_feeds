@@ -47,17 +47,17 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
       'callback' => 'uc_feeds_set_target',
       'description' => 'Ubercart:' . t('Weight Unit'),
     );
-    
+
     // Attributes
     if (module_exists("uc_attribute")) {
       $attribs = uc_attribute_load_multiple();
-      
+
       foreach ($attribs as $attrib) {
         $aid = $attrib->aid;
-        
+
         foreach ($attrib->options as $option) {
           $oid = $option->oid;
-          
+
           // Attribute Price
           $targets['attribute_price_' . $aid . "_" . $oid] = array(
             'name' => t('UCA Price: ' . $attrib->name . ":" . $option->name),
@@ -89,28 +89,29 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
   * element the user has picked as a source.
   */
 function uc_feeds_set_target($source, $node, $target, $value) {
-  if (!is_array($value)) {
-    if (substr($target, 0, 10) != "attribute_") {
-      $node->$target = $value;
+  // We assume single values for all ubercart related entities.
+  $value = $value[0];
+
+  if (substr($target, 0, 10) != "attribute_") {
+    $node->$target = $value;
+  }
+  else {
+    $ao_arr = explode("_", $target);
+    $aid = $ao_arr[2];
+    $oid = $ao_arr[3];
+
+    // just flag the attributes for now - node API will take care of saving them
+    $node->uc_feeds_flag = "Attributes";
+
+  // If value is empty, it's not an attribute we want to use
+    if (substr($target, 0, 15) == "attribute_price" && $value != '') {
+  $node->attributes[$aid]->options[$oid]->price = $value;
     }
-    else {
-      $ao_arr = explode("_", $target);
-      $aid = $ao_arr[2];
-      $oid = $ao_arr[3];
-      
-      // just flag the attributes for now - node API will take care of saving them
-      $node->uc_feeds_flag = "Attributes";
-      
-    // If value is empty, it's not an attribute we want to use
-      if (substr($target, 0, 15) == "attribute_price" && $value != '') {
-    $node->attributes[$aid]->options[$oid]->price = $value;
-      }
-      elseif (substr($target, 0, 14) == "attribute_cost" && $value != '') {
-    $node->attributes[$aid]->options[$oid]->cost = $value;
-      }
-      elseif (substr($target, 0, 16) == "attribute_weight" && $value != '') {
-        $node->attributes[$aid]->options[$oid]->weight = $value;
-      }
+    elseif (substr($target, 0, 14) == "attribute_cost" && $value != '') {
+  $node->attributes[$aid]->options[$oid]->cost = $value;
+    }
+    elseif (substr($target, 0, 16) == "attribute_weight" && $value != '') {
+      $node->attributes[$aid]->options[$oid]->weight = $value;
     }
   }
 }
@@ -123,7 +124,7 @@ function uc_feeds_node_insert($node) {
     foreach ($node->attributes as $aid => $feedattrib) {
       // Load all options for added attributes. (Will only enable the ones set in the import)
       $attribute = uc_attribute_load($aid);
-      
+
       foreach ($attribute->options as $option) {
     // some part of the option is set, default all empty parts to 0 or ''
         if (isset($node->attributes[$aid]->options[$option->oid])) {
@@ -141,7 +142,7 @@ function uc_feeds_node_insert($node) {
           ))->execute();
     }
       }
-      
+
       // Make the first option (if any) the default.
       $option = reset($attribute->options);
       if ($option) {
