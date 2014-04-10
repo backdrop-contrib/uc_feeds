@@ -50,6 +50,13 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
 
     // Attributes
     if (module_exists("uc_attribute")) {
+
+      $targets['attribute_combinations'] = array(
+        'name' => t('UCA: Combinations'),
+        'callback' => 'uc_feeds_set_target',
+        'description' => 'Ubercart:' . t('Weight Unit'),
+      );
+
       $attribs = uc_attribute_load_multiple();
 
       foreach ($attribs as $attrib) {
@@ -60,23 +67,23 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
 
           // Attribute Price
           $targets['attribute_price_' . $aid . "_" . $oid] = array(
-            'name' => t('UCA Price: ' . $attrib->name . ":" . $option->name),
+            'name' => t('UCA: Attribute @attr: Option @option: Price', array('@attr' => $attrib->name, '@option' => $option->name)),
             'callback' => 'uc_feeds_set_target',
-            'description' => 'Ubercart:' . t('Attribute Price:' . $attrib->name . ":" . $option->name),
+            'description' => 'Ubercart attributes:' . t('Price for @attr/@option', array('@attr' => $attrib->name, '@option' => $option->name)),
           );
 
           // Attribute Cost
           $targets['attribute_cost_' . $aid . "_" . $oid] = array(
-            'name' => t('UCA Cost: ' . $attrib->name . ":" . $option->name),
+            'name' => t('UCA: Attribute @attr: Option @option: Cost', array('@attr' => $attrib->name, '@option' => $option->name)),
             'callback' => 'uc_feeds_set_target',
-            'description' => 'Ubercart:' . t('Attribute Cost:' . $attrib->name . ":" . $option->name),
+            'description' => 'Ubercart attributes:' . t('Cost for @attr/@option', array('@attr' => $attrib->name, '@option' => $option->name)),
           );
 
           // Attribute Weight
           $targets['attribute_weight_' . $aid . "_" . $oid] = array(
-            'name' => t('UCA Weight: ' . $attrib->name . ":" . $option->name),
+            'name' => t('UCA: Attribute @attr: Option @option: Weight', array('@attr' => $attrib->name, '@option' => $option->name)),
             'callback' => 'uc_feeds_set_target',
-            'description' => 'Ubercart:' . t('Attribute Weight:' . $attrib->name . ":" . $option->name),
+            'description' => 'Ubercart attributes:' . t('Weight for @attr/@option', array('@attr' => $attrib->name, '@option' => $option->name)),
           );
         }
       }
@@ -92,26 +99,27 @@ function uc_feeds_set_target($source, $node, $target, $value) {
   // We assume single values for all ubercart related entities.
   $value = $value[0];
 
-  if (substr($target, 0, 10) != "attribute_") {
+  $target_array = explode('_', $target);
+
+  if ($target_array[0] != "attribute") {
     $node->$target = $value;
   }
   else {
-    $ao_arr = explode("_", $target);
-    $aid = $ao_arr[2];
-    $oid = $ao_arr[3];
+    $key = $target_array[1];
+    $aid = $target_array[2];
+    $oid = $target_array[3];
 
-    // just flag the attributes for now - node API will take care of saving them
-    $node->uc_feeds_flag = "Attributes";
-
-  // If value is empty, it's not an attribute we want to use
-    if (substr($target, 0, 15) == "attribute_price" && $value != '') {
-  $node->attributes[$aid]->options[$oid]->price = $value;
+    if ($key == 'combinations') {
+      $data = unserialize($value);
+      if ($data !== FALSE && is_array($data)) {
+        $node->uc_feeds['combinations'] = $data;
+      }
     }
-    elseif (substr($target, 0, 14) == "attribute_cost" && $value != '') {
-  $node->attributes[$aid]->options[$oid]->cost = $value;
-    }
-    elseif (substr($target, 0, 16) == "attribute_weight" && $value != '') {
-      $node->attributes[$aid]->options[$oid]->weight = $value;
+    else {
+      // If value is empty, it's not an attribute we want to use
+      if ($value != '') {
+        $node->attributes[$aid]->options[$oid]->$key = $value;
+      }
     }
   }
 }
@@ -121,12 +129,25 @@ function uc_feeds_set_target($source, $node, $target, $value) {
  */
 function uc_feeds_node_insert($node) {
   if (uc_product_is_product($node) && module_exists("uc_attribute")) {
+    if (isset($node->uc_feeds['combinations'])) {
+      foreach ($node->uc_feeds['combinations'] as $combination) {
+        db_insert('uc_product_adjustments')
+        ->fields(array(
+            'nid' => $node->nid,
+            'combination' => serialize($combination['combination']),
+            'model' => $combination['model'],
+          ))
+        ->execute();
+
+      }
+    }
+
     foreach ($node->attributes as $aid => $feedattrib) {
       // Load all options for added attributes. (Will only enable the ones set in the import)
       $attribute = uc_attribute_load($aid);
 
       foreach ($attribute->options as $option) {
-    // some part of the option is set, default all empty parts to 0 or ''
+        // some part of the option is set, default all empty parts to 0 or ''
         if (isset($node->attributes[$aid]->options[$option->oid])) {
           $option->price = ($node->attributes[$aid]->options[$option->oid]->price != '') ? $node->attributes[$aid]->options[$option->oid]->price : 0;
           $option->cost = ($node->attributes[$aid]->options[$option->oid]->cost != '') ? $node->attributes[$aid]->options[$option->oid]->cost : 0;
@@ -140,7 +161,7 @@ function uc_feeds_node_insert($node) {
             'weight' => $option->weight,
             'ordering' => $option->ordering,
           ))->execute();
-    }
+        }
       }
 
       // Make the first option (if any) the default.
@@ -151,9 +172,7 @@ function uc_feeds_node_insert($node) {
       else {
         $oid = 0;
       }
-      // TODO Please convert this statement to the D7 database API syntax.
 
-      //Drupal 7 piece added
       $res = db_select('uc_attributes', 'c')
       ->fields('c')
       ->condition('aid',$aid)
