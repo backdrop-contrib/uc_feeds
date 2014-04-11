@@ -67,23 +67,23 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
 
           // Attribute Price
           $targets['attribute_price_' . $aid . "_" . $oid] = array(
-            'name' => t('UCA: Attribute @attr: Option @option: Price', array('@attr' => $attrib->name, '@option' => $option->name)),
+            'name' => t('UCA: Attribute !attr: Option !option: Price', array('!attr' => $attrib->name, '!option' => $option->name)),
             'callback' => 'uc_feeds_set_target',
-            'description' => 'Ubercart attributes:' . t('Price for @attr/@option', array('@attr' => $attrib->name, '@option' => $option->name)),
+            'description' => 'Ubercart attributes:' . t('Price for !attr/!option', array('!attr' => $attrib->name, '!option' => $option->name)),
           );
 
           // Attribute Cost
           $targets['attribute_cost_' . $aid . "_" . $oid] = array(
-            'name' => t('UCA: Attribute @attr: Option @option: Cost', array('@attr' => $attrib->name, '@option' => $option->name)),
+            'name' => t('UCA: Attribute !attr: Option !option: Cost', array('!attr' => $attrib->name, '!option' => $option->name)),
             'callback' => 'uc_feeds_set_target',
-            'description' => 'Ubercart attributes:' . t('Cost for @attr/@option', array('@attr' => $attrib->name, '@option' => $option->name)),
+            'description' => 'Ubercart attributes:' . t('Cost for !attr/!option', array('!attr' => $attrib->name, '!option' => $option->name)),
           );
 
           // Attribute Weight
           $targets['attribute_weight_' . $aid . "_" . $oid] = array(
-            'name' => t('UCA: Attribute @attr: Option @option: Weight', array('@attr' => $attrib->name, '@option' => $option->name)),
+            'name' => t('UCA: Attribute !attr: Option !option: Weight', array('!attr' => $attrib->name, '!option' => $option->name)),
             'callback' => 'uc_feeds_set_target',
-            'description' => 'Ubercart attributes:' . t('Weight for @attr/@option', array('@attr' => $attrib->name, '@option' => $option->name)),
+            'description' => 'Ubercart attributes:' . t('Weight for !attr/!option', array('!attr' => $attrib->name, '!option' => $option->name)),
           );
         }
       }
@@ -118,7 +118,7 @@ function uc_feeds_set_target($source, $node, $target, $value) {
     else {
       // If value is empty, it's not an attribute we want to use
       if ($value != '') {
-        $node->attributes[$aid]->options[$oid]->$key = $value;
+        $node->uc_feeds['attributes'][$aid]->options[$oid]->$key = $value;
       }
     }
   }
@@ -142,54 +142,57 @@ function uc_feeds_node_insert($node) {
       }
     }
 
-    foreach ($node->attributes as $aid => $feedattrib) {
-      // Load all options for added attributes. (Will only enable the ones set in the import)
-      $attribute = uc_attribute_load($aid);
+    if (isset($node->uc_feeds['attributes'])) {
+      foreach ($node->uc_feeds['attributes'] as $aid => $feedattrib) {
+        // Load all options for added attributes. (Will only enable the ones set in the import)
+        $attribute = uc_attribute_load($aid);
 
-      foreach ($attribute->options as $option) {
-        // some part of the option is set, default all empty parts to 0 or ''
-        if (isset($node->attributes[$aid]->options[$option->oid])) {
-          $option->price = ($node->attributes[$aid]->options[$option->oid]->price != '') ? $node->attributes[$aid]->options[$option->oid]->price : 0;
-          $option->cost = ($node->attributes[$aid]->options[$option->oid]->cost != '') ? $node->attributes[$aid]->options[$option->oid]->cost : 0;
-          $option->weight = ($node->attributes[$aid]->options[$option->oid]->weight != '') ? $node->attributes[$aid]->options[$option->oid]->weight : 0;
+        foreach ($attribute->options as $option) {
+          // some part of the option is set, default all empty parts to 0 or ''
+          if (isset($feedattrib->options[$option->oid])) {
+            $option->price = ($feedattrib->options[$option->oid]->price != '') ? $feedattrib->options[$option->oid]->price : 0;
+            $option->cost = ($feedattrib->options[$option->oid]->cost != '') ? $feedattrib->options[$option->oid]->cost : 0;
+            $option->weight = ($feedattrib->options[$option->oid]->weight != '') ? $feedattrib->options[$option->oid]->weight : 0;
 
-          $id = db_insert('uc_product_options')->fields(array(
-            'nid' => $node->nid,
-            'oid' => $option->oid,
-            'cost' => $option->cost,
-            'price' => $option->price,
-            'weight' => $option->weight,
-            'ordering' => $option->ordering,
-          ))->execute();
+            $id = db_insert('uc_product_options')->fields(array(
+              'nid' => $node->nid,
+              'oid' => $option->oid,
+              'cost' => $option->cost,
+              'price' => $option->price,
+              'weight' => $option->weight,
+              'ordering' => $option->ordering,
+            ))->execute();
+          }
         }
-      }
 
-      // Make the first option (if any) the default.
-      $option = reset($attribute->options);
-      if ($option) {
-        $oid = $option->oid;
-      }
-      else {
-        $oid = 0;
-      }
+        // Make the first option (if any) the default.
+        $option = reset($attribute->options);
+        if ($option) {
+          $oid = $option->oid;
+        }
+        else {
+          $oid = 0;
+        }
 
-      $res = db_select('uc_attributes', 'c')
-      ->fields('c')
-      ->condition('aid',$aid)
-      ->execute()
-      ->fetchAssoc();
+        $res = db_select('uc_attributes', 'c')
+        ->fields('c')
+        ->condition('aid',$aid)
+        ->execute()
+        ->fetchAssoc();
 
-      $nid = db_insert('uc_product_attributes') // Table name no longer needs {}
-      ->fields(array(
-          'nid' => $node->nid,
-          'aid' => $res['aid'],
-          'label' => $res['label'],
-          'ordering' => $res['ordering'],
-          'default_option' => $oid,
-          'required' => $res['required'],
-          'display' => $res['display'],
-        ))
-      ->execute();
+        $nid = db_insert('uc_product_attributes') // Table name no longer needs {}
+        ->fields(array(
+            'nid' => $node->nid,
+            'aid' => $res['aid'],
+            'label' => $res['label'],
+            'ordering' => $res['ordering'],
+            'default_option' => $oid,
+            'required' => $res['required'],
+            'display' => $res['display'],
+          ))
+        ->execute();
+      }
     }
   }
+
 }
