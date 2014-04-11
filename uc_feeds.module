@@ -103,7 +103,7 @@ function uc_feeds_set_target($source, $node, $target, $value) {
 
   if ($target_array[0] != "attribute") {
     // For numeric fields, default to 0 if empty
-    if (in_array($target, array('list_price', 'cost', 'sell_price')) && empty($value)) {
+    if (in_array($target, array('list_price', 'cost', 'sell_price', 'weight')) && $value == '') {
       $value = 0;
     }
     $node->$target = $value;
@@ -121,11 +121,18 @@ function uc_feeds_set_target($source, $node, $target, $value) {
     }
     else {
       // If value is empty, it's not an attribute we want to use
-      if (!empty($value)) {
+      if ($value != '') {
         $node->uc_feeds['attributes'][$aid]->options[$oid]->$key = $value;
       }
     }
   }
+}
+
+/**
+ * Implements hook_feeds_node_update().
+ */
+function uc_feeds_node_update($node) {
+  uc_feeds_node_insert($node);
 }
 
 /**
@@ -135,14 +142,15 @@ function uc_feeds_node_insert($node) {
   if (uc_product_is_product($node) && module_exists("uc_attribute")) {
     if (isset($node->uc_feeds['combinations'])) {
       foreach ($node->uc_feeds['combinations'] as $combination) {
-        db_insert('uc_product_adjustments')
-        ->fields(array(
-            'nid' => $node->nid,
-            'combination' => serialize($combination['combination']),
+        db_merge('uc_product_adjustments')
+          ->fields(array(
             'model' => $combination['model'],
           ))
-        ->execute();
-
+          ->key(array(
+            'nid' => $node->nid,
+            'combination' => serialize($combination['combination']),
+          ))
+          ->execute();
       }
     }
 
@@ -154,17 +162,28 @@ function uc_feeds_node_insert($node) {
         foreach ($attribute->options as $option) {
           // some part of the option is set, default all empty parts to 0 or ''
           if (isset($feedattrib->options[$option->oid])) {
-            $option->price = ($feedattrib->options[$option->oid]->price != '') ? $feedattrib->options[$option->oid]->price : 0;
-            $option->cost = ($feedattrib->options[$option->oid]->cost != '') ? $feedattrib->options[$option->oid]->cost : 0;
-            $option->weight = ($feedattrib->options[$option->oid]->weight != '') ? $feedattrib->options[$option->oid]->weight : 0;
+            $updating_fields = array();
+
+            if (isset($feedattrib->options[$option->oid]->price)) {
+              $updating_fields['price'] = $feedattrib->options[$option->oid]->price;
+            }
+            if (isset($feedattrib->options[$option->oid]->cost)) {
+              $updating_fields['cost'] = $feedattrib->options[$option->oid]->cost;
+            }
+            if (isset($feedattrib->options[$option->oid]->weight)) {
+              $updating_fields['weight'] = $feedattrib->options[$option->oid]->weight;
+            }
 
             db_merge('uc_product_options')
-              ->key(array('nid' => $node->nid, 'oid' => $option->oid))
-              ->fields(array(
-                'cost' => $option->cost,
-                'price' => $option->price,
-                'weight' => $option->weight,
+              ->insertFields(array(
                 'ordering' => $option->ordering,
+              ) + $updating_fields)
+              ->updateFields(array(
+                'ordering' => $option->ordering,
+              ) + $updating_fields)
+              ->key(array(
+                'nid' => $node->nid,
+                'oid' => $option->oid,
               ))
               ->execute();
           }
@@ -186,13 +205,16 @@ function uc_feeds_node_insert($node) {
           ->fetchAssoc();
 
         db_merge('uc_product_attributes')
-          ->key(array('nid' => $node->nid, 'aid' => $aid))
-          ->fields(array(
+          ->insertFields(array(
             'default_option' => $oid,
             'label' => $res['label'],
             'ordering' => $res['ordering'],
             'required' => $res['required'],
             'display' => $res['display'],
+          ))
+          ->key(array(
+            'nid' => $node->nid,
+            'aid' => $aid
           ))
           ->execute();
       }
