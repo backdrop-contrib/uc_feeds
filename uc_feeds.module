@@ -102,6 +102,10 @@ function uc_feeds_set_target($source, $node, $target, $value) {
   $target_array = explode('_', $target);
 
   if ($target_array[0] != "attribute") {
+    // For numeric fields, default to 0 if empty
+    if (in_array($target, array('list_price', 'cost', 'sell_price')) && empty($value)) {
+      $value = 0;
+    }
     $node->$target = $value;
   }
   else {
@@ -117,7 +121,7 @@ function uc_feeds_set_target($source, $node, $target, $value) {
     }
     else {
       // If value is empty, it's not an attribute we want to use
-      if ($value != '') {
+      if (!empty($value)) {
         $node->uc_feeds['attributes'][$aid]->options[$oid]->$key = $value;
       }
     }
@@ -154,14 +158,15 @@ function uc_feeds_node_insert($node) {
             $option->cost = ($feedattrib->options[$option->oid]->cost != '') ? $feedattrib->options[$option->oid]->cost : 0;
             $option->weight = ($feedattrib->options[$option->oid]->weight != '') ? $feedattrib->options[$option->oid]->weight : 0;
 
-            $id = db_insert('uc_product_options')->fields(array(
-              'nid' => $node->nid,
-              'oid' => $option->oid,
-              'cost' => $option->cost,
-              'price' => $option->price,
-              'weight' => $option->weight,
-              'ordering' => $option->ordering,
-            ))->execute();
+            db_merge('uc_product_options')
+              ->key(array('nid' => $node->nid, 'oid' => $option->oid))
+              ->fields(array(
+                'cost' => $option->cost,
+                'price' => $option->price,
+                'weight' => $option->weight,
+                'ordering' => $option->ordering,
+              ))
+              ->execute();
           }
         }
 
@@ -175,22 +180,21 @@ function uc_feeds_node_insert($node) {
         }
 
         $res = db_select('uc_attributes', 'c')
-        ->fields('c')
-        ->condition('aid',$aid)
-        ->execute()
-        ->fetchAssoc();
+          ->fields('c')
+          ->condition('aid',$aid)
+          ->execute()
+          ->fetchAssoc();
 
-        $nid = db_insert('uc_product_attributes') // Table name no longer needs {}
-        ->fields(array(
-            'nid' => $node->nid,
-            'aid' => $res['aid'],
+        db_merge('uc_product_attributes')
+          ->key(array('nid' => $node->nid, 'aid' => $aid))
+          ->fields(array(
+            'default_option' => $oid,
             'label' => $res['label'],
             'ordering' => $res['ordering'],
-            'default_option' => $oid,
             'required' => $res['required'],
             'display' => $res['display'],
           ))
-        ->execute();
+          ->execute();
       }
     }
   }
