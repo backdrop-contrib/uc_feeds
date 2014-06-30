@@ -110,8 +110,6 @@ function uc_feeds_set_target($source, $node, $target, $value) {
   }
   else {
     $key = $target_array[1];
-    $aid = $target_array[2];
-    $oid = $target_array[3];
 
     if ($key == 'combinations') {
       $data = unserialize($value);
@@ -120,8 +118,16 @@ function uc_feeds_set_target($source, $node, $target, $value) {
       }
     }
     else {
+      $aid = $target_array[2];
+      $oid = $target_array[3];
       // If value is empty, it's not an attribute we want to use
       if ($value != '') {
+        if (!isset($node->uc_feeds['attributes'][$aid])) {
+          $node->uc_feeds['attributes'][$aid] = new stdClass();
+        }
+        if (!isset($node->uc_feeds['attributes'][$aid]->options[$oid])) {
+          $node->uc_feeds['attributes'][$aid]->options[$oid] = new stdClass();
+        }
         $node->uc_feeds['attributes'][$aid]->options[$oid]->$key = $value;
       }
     }
