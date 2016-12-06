@@ -179,13 +179,13 @@ function uc_feeds_node_insert($node) {
     }
 
     $fields = array();
-    if (!empty($node->uc_feeds_stock_stock)) {
+    if (isset($node->uc_feeds_stock_stock)) {
       $fields['stock'] = $node->uc_feeds_stock_stock;
     }
-    if (!empty($node->uc_feeds_stock_active)) {
+    if (isset($node->uc_feeds_stock_active)) {
       $fields['active'] = $node->uc_feeds_stock_active;
     }
-    if (!empty($node->uc_feeds_stock_active)) {
+    if (isset($node->uc_feeds_stock_active)) {
       $fields['threshold'] = $node->uc_feeds_stock_threshold;
     }
 
