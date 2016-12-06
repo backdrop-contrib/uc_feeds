@@ -48,13 +48,38 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
       'description' => 'Ubercart:' . t('Weight Unit'),
     );
 
+    if (module_exists("uc_stock")) {
+        $targets['uc_feeds_stock_sku'] = array(
+          'name' => t('UC Stock: SKU'),
+          'callback' => 'uc_feeds_set_target',
+          'description' => t('An SKU column to update stock information. If missing, product\'s nid and main SKU will be used'),
+        );
+
+        $targets['uc_feeds_stock_active'] = array(
+          'name' => t('UC Stock: Active'),
+          'callback' => 'uc_feeds_set_target',
+          'description' => t('If stock control should be active or not for the product.'),
+        );
+
+        $targets['uc_feeds_stock_stock'] = array(
+          'name' => t('UC Stock: Stock'),
+          'callback' => 'uc_feeds_set_target',
+          'description' => t('The actual stock for the main or provided Stock SKU'),
+        );
+        $targets['uc_feeds_stock_threshold'] = array(
+          'name' => t('UC Stock: Threshold'),
+          'callback' => 'uc_feeds_set_target',
+          'description' => t('The stock threshold in which notifications will be sent as configured.'),
+        );
+    }
+
     // Attributes
     if (module_exists("uc_attribute")) {
 
       $targets['attribute_combinations'] = array(
         'name' => t('UCA: Combinations'),
         'callback' => 'uc_feeds_set_target',
-        'description' => 'Ubercart:' . t('Weight Unit'),
+        'description' => 'Ubercart:' . t('Combination of attributes'),
       );
 
       $attribs = uc_attribute_load_multiple();
@@ -145,6 +170,36 @@ function uc_feeds_node_update($node) {
  * Implements hook_feeds_node_insert().
  */
 function uc_feeds_node_insert($node) {
+  if (uc_product_is_product($node) && module_exists("uc_stock")) {
+    if (!empty($node->uc_feeds_stock_sku)) {
+      $sku = $node->uc_feeds_stock_sku;
+    }
+    else {
+      $sku = $node->model;
+    }
+
+    $fields = array();
+    if (!empty($node->uc_feeds_stock_stock)) {
+      $fields['stock'] = $node->uc_feeds_stock_stock;
+    }
+    if (!empty($node->uc_feeds_stock_active)) {
+      $fields['active'] = $node->uc_feeds_stock_active;
+    }
+    if (!empty($node->uc_feeds_stock_active)) {
+      $fields['threshold'] = $node->uc_feeds_stock_threshold;
+    }
+
+    if (!empty($fields)) {
+      db_merge('uc_product_stock')
+        ->fields(array(
+          'nid' => $node->nid,
+        ) + $fields)
+        ->key(array(
+          'sku' => $sku,
+        ))
+        ->execute();
+    }
+  }
   if (uc_product_is_product($node) && module_exists("uc_attribute")) {
     if (isset($node->uc_feeds['combinations'])) {
       foreach ($node->uc_feeds['combinations'] as $combination) {
