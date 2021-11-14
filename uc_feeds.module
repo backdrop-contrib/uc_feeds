@@ -268,12 +268,12 @@ function uc_feeds_node_insert($node) {
 
         db_merge('uc_product_attributes')
           ->insertFields(array(
-              'default_option' => $oid,
-              'label' => $res['label'],
-              'ordering' => $res['ordering'],
-              'required' => $res['required'],
-              'display' => $res['display'],
-            ))
+            'default_option' => $oid,
+            'label' => $res['label'],
+            'ordering' => $res['ordering'],
+            'required' => $res['required'],
+            'display' => $res['display'],
+          ))
           ->key(array(
             'nid' => $node->nid,
             'aid' => $aid,
