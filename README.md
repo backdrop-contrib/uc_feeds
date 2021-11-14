@@ -16,6 +16,7 @@ Attributes and Options must already exist in Ubercart.
 ## Maintainers for Backdrop
 
  - Tim Erickson (https://github.com/stpaultim)
+ - Help wanted (open a PR and ping me)
 
 ## Credits
 
