@@ -1,14 +1,12 @@
-#  Configurable Block Style
+#  Ubercart Feeds
 
-This module provides a block style with many configuration options to allow easy
-customization of the look of your blocks.
+This module provides Feeds mappings for Ubercart items, including model, prices, 
+weight and weight units.
 
-## Features
+It also adds the ability to include attribute mappings (which are added to the 
+product after it has been created), both for the price and weight fields.
 
-  - Options to change the text and background colors of your blocks
-  - Custom block sizes including the option to fit the size of your background
-      image on hero blocks
-  - The ability to add a wrapper with the .container classes on the block content
+Attributes and Options must already exist in Ubercart.
 
 ## Installation
 
@@ -17,8 +15,14 @@ customization of the look of your blocks.
 
 ## Maintainers for Backdrop
 
-- Joseph Flatt (hosef)
-- Tim Erickson (stpaultim)
+ - Tim Erickson (https://github.com/stpaultim)
+
+## Credits
+
+ - Port sponsored by: Simplo (https://simplo.site) by Triplo (https://triplo.co)
+ - Drupal 7 version maintained by: [hanoii](https://www.drupal.org/u/hanoii), [Dubs](https://www.drupal.org/u/dubs), [Robin Millette](https://www.drupal.org/u/robin-millette)
+ - Supported development of the original D7 module - [Drupology](https://www.drupal.org/drupology), [Infomagnet](http://www.infomagnet.com/)
+ - Sponsored the addition of stock information mappers - [luf](https://www.drupal.org/u/luf)
 
 ## LICENSE
 
