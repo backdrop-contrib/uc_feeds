@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Implementation of hook_feeds_processor_targets_alter().
+ * Implements hook_feeds_processor_targets_alter().
  */
 function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle_name) {
   // Proceed only if the content_type is a product type.
@@ -24,12 +24,12 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
       'callback' => 'uc_feeds_set_target',
       'description' => 'Ubercart:' . t('Cost'),
     );
-  // Name
+    // Name
     $targets['Name'] = array(
       'name' => t('UC: Name'),
       'callback' => 'uc_feeds_set_target',
       'description' => 'Ubercart:' . t('Name'),
-  );
+    );
     // Sell price
     $targets['sell_price'] = array(
       'name' => t('UC: Sell price'),
@@ -49,28 +49,28 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
     );
 
     if (module_exists("uc_stock")) {
-        $targets['uc_feeds_stock_sku'] = array(
-          'name' => t('UC Stock: SKU'),
-          'callback' => 'uc_feeds_set_target',
-          'description' => t('An SKU column to update stock information. If missing, product\'s nid and main SKU will be used'),
-        );
+      $targets['uc_feeds_stock_sku'] = array(
+        'name' => t('UC Stock: SKU'),
+        'callback' => 'uc_feeds_set_target',
+        'description' => t('An SKU column to update stock information. If missing, product\'s nid and main SKU will be used'),
+      );
 
-        $targets['uc_feeds_stock_active'] = array(
-          'name' => t('UC Stock: Active'),
-          'callback' => 'uc_feeds_set_target',
-          'description' => t('If stock control should be active or not for the product.'),
-        );
+      $targets['uc_feeds_stock_active'] = array(
+        'name' => t('UC Stock: Active'),
+        'callback' => 'uc_feeds_set_target',
+        'description' => t('If stock control should be active or not for the product.'),
+      );
 
-        $targets['uc_feeds_stock_stock'] = array(
-          'name' => t('UC Stock: Stock'),
-          'callback' => 'uc_feeds_set_target',
-          'description' => t('The actual stock for the main or provided Stock SKU'),
-        );
-        $targets['uc_feeds_stock_threshold'] = array(
-          'name' => t('UC Stock: Threshold'),
-          'callback' => 'uc_feeds_set_target',
-          'description' => t('The stock threshold in which notifications will be sent as configured.'),
-        );
+      $targets['uc_feeds_stock_stock'] = array(
+        'name' => t('UC Stock: Stock'),
+        'callback' => 'uc_feeds_set_target',
+        'description' => t('The actual stock for the main or provided Stock SKU'),
+      );
+      $targets['uc_feeds_stock_threshold'] = array(
+        'name' => t('UC Stock: Threshold'),
+        'callback' => 'uc_feeds_set_target',
+        'description' => t('The stock threshold in which notifications will be sent as configured.'),
+      );
     }
 
     // Attributes
@@ -116,10 +116,10 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
   }
 }
 
- /**
-  * user has decided to map to and $value contains the value of the feed item
-  * element the user has picked as a source.
-  */
+/**
+ * user has decided to map to and $value contains the value of the feed item
+ * element the user has picked as a source.
+ */
 function uc_feeds_set_target($source, $node, $target, $value) {
   // We assume single values for all ubercart related entities.
   $value = $value[0];
@@ -192,11 +192,11 @@ function uc_feeds_node_insert($node) {
     if (!empty($fields)) {
       db_merge('uc_product_stock')
         ->fields(array(
-          'nid' => $node->nid,
-        ) + $fields)
+        'nid' => $node->nid,
+      ) + $fields)
         ->key(array(
-          'sku' => $sku,
-        ))
+        'sku' => $sku,
+      ))
         ->execute();
     }
   }
@@ -205,12 +205,12 @@ function uc_feeds_node_insert($node) {
       foreach ($node->uc_feeds['combinations'] as $combination) {
         db_merge('uc_product_adjustments')
           ->fields(array(
-            'model' => $combination['model'],
-          ))
+          'model' => $combination['model'],
+        ))
           ->key(array(
-            'nid' => $node->nid,
-            'combination' => serialize($combination['combination']),
-          ))
+          'nid' => $node->nid,
+          'combination' => serialize($combination['combination']),
+        ))
           ->execute();
       }
     }
@@ -237,15 +237,15 @@ function uc_feeds_node_insert($node) {
 
             db_merge('uc_product_options')
               ->insertFields(array(
-                'ordering' => $option->ordering,
-              ) + $updating_fields)
+              'ordering' => $option->ordering,
+            ) + $updating_fields)
               ->updateFields(array(
-                'ordering' => $option->ordering,
-              ) + $updating_fields)
+              'ordering' => $option->ordering,
+            ) + $updating_fields)
               ->key(array(
-                'nid' => $node->nid,
-                'oid' => $option->oid,
-              ))
+              'nid' => $node->nid,
+              'oid' => $option->oid,
+            ))
               ->execute();
           }
         }
@@ -261,22 +261,22 @@ function uc_feeds_node_insert($node) {
 
         $res = db_select('uc_attributes', 'c')
           ->fields('c')
-          ->condition('aid',$aid)
+          ->condition('aid', $aid)
           ->execute()
           ->fetchAssoc();
 
         db_merge('uc_product_attributes')
           ->insertFields(array(
-            'default_option' => $oid,
-            'label' => $res['label'],
-            'ordering' => $res['ordering'],
-            'required' => $res['required'],
-            'display' => $res['display'],
-          ))
+          'default_option' => $oid,
+          'label' => $res['label'],
+          'ordering' => $res['ordering'],
+          'required' => $res['required'],
+          'display' => $res['display'],
+        ))
           ->key(array(
-            'nid' => $node->nid,
-            'aid' => $aid
-          ))
+          'nid' => $node->nid,
+          'aid' => $aid,
+        ))
           ->execute();
       }
     }

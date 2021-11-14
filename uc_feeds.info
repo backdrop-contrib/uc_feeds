@@ -3,4 +3,5 @@ description = Integrates Ubercart properties with Feeds
 package = Feeds
 dependencies[] = uc_product
 dependencies[] = feeds
-core = 7.x
+backdrop = 1.x
+type = module
