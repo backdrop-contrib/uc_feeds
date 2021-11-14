@@ -1,7 +1,7 @@
 #  Ubercart Feeds
 
-This module provides Feeds mappings for Ubercart items, including model, prices, 
-weight and weight units.
+This module provides Feeds mappings for Ubercart items, including model, SKU, stock, prices, 
+weight, weight units, and more.
 
 It also adds the ability to include attribute mappings (which are added to the 
 product after it has been created), both for the price and weight fields.
