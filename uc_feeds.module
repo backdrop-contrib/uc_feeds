@@ -38,6 +38,31 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
       'callback' => 'uc_feeds_set_target',
       'description' => 'Ubercart:' . t('Sell price'),
     );
+    // Dimensions Path.
+    // Dimensions Length.
+    $targets['dim_length'] = array(
+      'name' => t('UC: Dim Length'),
+      'callback' => 'uc_feeds_set_target',
+      'description' => 'Ubercart:' . t('Dimensions - Length'),
+    );
+    // Dimensions Width.
+    $targets['dim_width'] = array(
+      'name' => t('UC: Dim Width'),
+      'callback' => 'uc_feeds_set_target',
+      'description' => 'Ubercart:' . t('Dimensions - Width'),
+    );
+    // Dimensions Height.
+    $targets['dim_height'] = array(
+      'name' => t('UC: Dim Height'),
+      'callback' => 'uc_feeds_set_target',
+      'description' => 'Ubercart:' . t('Dimensions - Height'),
+    );
+    //Dimensions Units.
+    $targets['length_units'] = array(
+      'name' => t('UC: Dim Unit'),
+      'callback' => 'uc_feeds_set_target',
+      'description' => 'Ubercart:' . t('Dimensions Unit'),
+    );
     // Weight.
     $targets['weight'] = array(
       'name' => t('UC: Weight'),
