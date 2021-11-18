@@ -11,6 +11,8 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
       'name' => t('UC: Model/SKU'),
       'callback' => 'uc_feeds_set_target',
       'description' => 'Ubercart:' . t('Model/SKU'),
+      'optional_unique' => TRUE,
+      'unique_callbacks' => array('uc_feeds_sku_mapper_unique')
     );
     // List price.
     $targets['list_price'] = array(
@@ -139,6 +141,32 @@ function uc_feeds_feeds_processor_targets_alter(&$targets, $entity_type, $bundle
       }
     }
   }
+}
+
+/**
+ * Looks for node matching the given SKU
+ *
+ * @param FeedsSource $source
+ *   The Feed source.
+ * @param string $entity_type
+ *   Entity type for the entity to be processed.
+ * @param string $bundle
+ *   Bundle name for the entity to be processed.
+ * @param string $target
+ *   A string identifying the unique target on the entity.
+ * @param array $values
+ *   The unique values to be checked.
+ *
+ * @return int|null
+ *   The existing entity id, or NULL if no existing entity is found.
+ *
+ * @see hook_feeds_processor_targets()
+ * @see FeedsProcessor::existingEntityId()
+ */
+function uc_feeds_sku_mapper_unique(FeedsSource $source, $entity_type, $bundle, $target, array $values) {
+  $nid = db_query("SELECT nid FROM {uc_products} WHERE model = :model", array(':model' => $values[0]))->fetchField();    
+  
+  return $nid;    
 }
 
 /**
