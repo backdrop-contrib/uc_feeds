@@ -1,7 +1,7 @@
 name = Ubercart Feeds
 description = Integrates Ubercart properties with Feeds
 package = Feeds
-dependencies[] = uc_product
+dependencies[] = ubercart
 dependencies[] = feeds
 backdrop = 1.x
 type = module
